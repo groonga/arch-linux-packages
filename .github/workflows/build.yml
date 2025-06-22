@@ -1,0 +1,15 @@
+name: Build
+on:
+  - push
+  - pull_request
+concurrency:
+  group: ${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: dummy
+        run: echo 'Setting file that does nothing to run CI on pull request GH-2.'

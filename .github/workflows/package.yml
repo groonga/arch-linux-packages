@@ -70,3 +70,29 @@ jobs:
         with:
           name: packages
           path: "/home/builder/groonga/*.pkg.tar.*"
+  release:
+    name: Release
+    needs: packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+      - name: Prepare release note
+        run: |
+          echo "Groonga ${GITHUB_REF_NAME}" | tee release-title.txt
+          commit_id=$(git ls-remote  https://aur.archlinux.org/groonga.git HEAD | head -n 1 | awk '{print $1}')
+          cat <<RELEASE_NOTE | tee release-note.md
+          Groonga: https://github.com/groonga/groonga/releases/tag/v${GITHUB_REF_NAME}
+          AUR: https://aur.archlinux.org/packages/groonga
+          PKGBUILD: https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=groonga&id=${commit_id}
+          RELEASE_NOTE
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --discussion-category Announcements \
+            --notes-file release-note.md \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "$(cat release-title.txt)" \
+            packages/*
